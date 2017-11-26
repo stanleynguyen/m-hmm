@@ -4,7 +4,9 @@ from copy import copy
 from collections import defaultdict
 from optparse import OptionParser
 
-#Read entities from predcition
+# Read entities from predcition
+
+
 def get_predicted(predicted, answers=defaultdict(lambda: defaultdict(defaultdict))):
 
     example = 0
@@ -36,16 +38,15 @@ def get_predicted(predicted, answers=defaultdict(lambda: defaultdict(defaultdict
             ne = value[0]
             sent = value[2:]
 
-
             last_entity = []
 
-            #check if it is start of entity
+            # check if it is start of entity
             if ne == 'B' or (ne == 'I' and last_ne == 'O') or (last_ne != 'O' and ne == 'I' and last_sent != sent):
                 if entity:
                     last_entity = list(entity)
 
                 entity = [sent]
-                    
+
                 entity.append(word_index)
 
             elif ne == 'I':
@@ -53,9 +54,8 @@ def get_predicted(predicted, answers=defaultdict(lambda: defaultdict(defaultdict
 
             elif ne == 'O':
                 if last_ne == 'B' or last_ne == 'I':
-                    last_entity =list(entity)
+                    last_entity = list(entity)
                 entity = []
-
 
             if last_entity:
                 answers[example].append(list(last_entity))
@@ -68,14 +68,11 @@ def get_predicted(predicted, answers=defaultdict(lambda: defaultdict(defaultdict
     if entity:
         answers[example].append(list(entity))
 
-
     return answers
 
 
-
-#Read entities from gold data
+# Read entities from gold data
 def get_observed(observed):
-
 
     example = 0
     word_index = 0
@@ -84,7 +81,7 @@ def get_observed(observed):
     last_sent = ""
     last_entity = []
 
-    observations=defaultdict(defaultdict)
+    observations = defaultdict(defaultdict)
     observations[example] = []
 
     for line in observed:
@@ -109,16 +106,15 @@ def get_observed(observed):
             ne = value[0]
             sent = value[2:]
 
-
             last_entity = []
 
-            #check if it is start of entity, suppose there is no weird case in gold data
+            # check if it is start of entity, suppose there is no weird case in gold data
             if ne == 'B' or (ne == 'I' and last_ne == 'O') or (last_ne != 'O' and ne == 'I' and last_sent != sent):
                 if entity:
                     last_entity = entity
 
                 entity = [sent]
-                    
+
                 entity.append(word_index)
 
             elif ne == 'I':
@@ -129,11 +125,9 @@ def get_observed(observed):
                     last_entity = entity
                 entity = []
 
-
             if last_entity:
                 observations[example].append(list(last_entity))
                 last_entity = []
-
 
         last_ne = ne
         last_sent = sent
@@ -144,18 +138,22 @@ def get_observed(observed):
 
     return observations
 
-#Print Results and deal with division by 0
+# Print Results and deal with division by 0
+
+
 def printResult(evalTarget, num_correct, prec, rec):
-    if abs(prec + rec ) < 1e-6:
+    if abs(prec + rec) < 1e-6:
         f = 0
     else:
         f = 2 * prec * rec / (prec + rec)
     print('#Correct', evalTarget, ':', num_correct)
     print(evalTarget, ' precision: %.4f' % (prec))
-    print(evalTarget, ' recall: %.4f' %   (rec))
+    print(evalTarget, ' recall: %.4f' % (rec))
     print(evalTarget, ' F: %.4f' % (f))
 
-#Compare results bewteen gold data and prediction data
+# Compare results bewteen gold data and prediction data
+
+
 def compare_observed_to_predicted(observed, predicted):
 
     correct_sentiment = 0
@@ -164,36 +162,35 @@ def compare_observed_to_predicted(observed, predicted):
     total_observed = 0.0
     total_predicted = 0.0
 
-    #For each Instance Index example (example = 0,1,2,3.....)
+    # For each Instance Index example (example = 0,1,2,3.....)
     for example in observed:
         observed_instance = observed[example]
         predicted_instance = predicted[example]
 
-        #Count number of entities in gold data
+        # Count number of entities in gold data
         total_observed += len(observed_instance)
-        #Count number of entities in prediction data
+        # Count number of entities in prediction data
         total_predicted += len(predicted_instance)
 
-        #For each entity in prediction
+        # For each entity in prediction
         for span in predicted_instance:
             span_begin = span[1]
             span_length = len(span) - 1
             span_ne = (span_begin, span_length)
             span_sent = span[0]
 
-            #For each entity in gold data
+            # For each entity in gold data
             for observed_span in observed_instance:
                 begin = observed_span[1]
                 length = len(observed_span) - 1
                 ne = (begin, length)
                 sent = observed_span[0]
 
-                #Entity matched
+                # Entity matched
                 if span_ne == ne:
                     correct_entity += 1
-                    
 
-                    #Entity & Sentiment both are matched
+                    # Entity & Sentiment both are matched
                     if span_sent == sent:
                         correct_sentiment += 1
 
@@ -202,19 +199,18 @@ def compare_observed_to_predicted(observed, predicted):
     print('#Entity in prediction: %d' % (total_predicted))
     print()
 
-    prec = correct_entity/total_predicted
-    rec = correct_entity/total_observed
+    prec = correct_entity / total_predicted
+    rec = correct_entity / total_observed
     printResult('Entity', correct_entity, prec, rec)
     print()
 
-    prec = correct_sentiment/total_predicted
-    rec = correct_sentiment/total_observed
-    printResult('Sentiment',correct_sentiment, prec, rec)
-
-
+    prec = correct_sentiment / total_predicted
+    rec = correct_sentiment / total_observed
+    printResult('Sentiment', correct_sentiment, prec, rec)
 
 
 ##############Main Function##################
+
 
 if len(sys.argv) < 3:
     print ('Please make sure you have installed Python 3.4 or above!')
@@ -225,17 +221,16 @@ if len(sys.argv) < 3:
 gold = open(sys.argv[1], "r", encoding='UTF-8')
 prediction = open(sys.argv[2], "r", encoding='UTF-8')
 
-#column separator
+# column separator
 separator = ' '
 
-#the column index for tags
+# the column index for tags
 outputColumnIndex = 1
-#Read Gold data
+# Read Gold data
 observed = get_observed(gold)
 
-#Read Predction data
+# Read Predction data
 predicted = get_predicted(prediction)
 
-#Compare
+# Compare
 compare_observed_to_predicted(observed, predicted)
-

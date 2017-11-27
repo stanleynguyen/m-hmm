@@ -1,5 +1,11 @@
 from hmm import SUTDHMM
 import os
+import sys
+from EvalScript.evalResult import get_observed, get_predicted, compare_observed_to_predicted
+import matplotlib.pyplot as plt
+import math
+
+
 # example usage for the emission prediction
 # model = SUTDHMM()
 # print(model.load_data('a O\nb O\na I\n c O\n'))
@@ -46,73 +52,111 @@ d Z
 b Z
 #DUM# STOP
 ''')
-languages = ['EN']  # , 'SG', 'CN', 'FR']
+# languages = ['EN', 'SG', 'CN', 'FR']
+
+# for l in languages:
+#     model = SUTDHMM()
+#     model.train(input_filename='./{}/train'.format(l))
+#     print("Finish training for {}".format(l))
+
+
+# print(model.max_marginal('a d'))
+
+languages = ['EN', 'FR']
 
 for l in languages:
-    model = SUTDHMM()
-    model.train(input_filename='./{}/train'.format(l))
-    print("Finish training for {}".format(l))
+    i = 0.1
+    x_array = []
+    entity_array = []
+    sentiment_array = []
+    while i > 0.0000000000001:
+        model = SUTDHMM(default_emission=i)
+        model.train(input_filename='./{}/train'.format(l))
 
+        # print("Finish training for {}".format(l))
 
-print(model.max_marginal('a d'))
+        # print("----------Predict Using Emission for {0}------------".format(l))
+        # with open("./{}/dev.in".format(l)) as in_file, open("./{}/dev.p2.out".format(l), 'w+') as out_file:
+        #     for line in in_file:
+        #         word = line.strip()
+        #         if (word == ''):
+        #             out_file.write("\n")
+        #         else:
+        #             out_file.write("{} {}\n".format(
+        #                 word, model.predict_label_using_emission(word)))
+        # print("Emission Finished: {}".format(l))
 
-languages = ['EN', 'SG', 'CN', 'FR']
+        # output = os.popen(
+        #     "python3 EvalScript/evalResult.py {0}/dev.out {0}/dev.p2.out".format(l)).read()
+        # print("Language: {}".format(l))
+        # print(output)
 
-for l in languages:
-    model = SUTDHMM(k=1)
-    model.train(input_filename='./{}/train'.format(l))
+        print("----------Viterbi for {0}------------".format(l))
+        with open("./{}/dev.in".format(l)) as in_file, open("./{}/dev.p3.out".format(l), 'w+') as out_file:
+            read_data = in_file.read()
+            sentences = list(
+                filter(lambda x: len(x) > 0, read_data.split('\n\n')))
+            sentences = list(map(lambda x: ' '.join(x.split('\n')), sentences))
+            for sentence in sentences:
+                sentence_labels, chance = model.viterbi(sentence)
+                for idx, word in enumerate(sentence.split()):
+                    out_file.write("{} {}\n".format(
+                        word, sentence_labels[idx]))
+                out_file.write('\n')
+            out_file.close()
+            in_file.close()
 
-    print("Finish training for {}".format(l))
+        print("Viterbi Finished: {}".format(l))
 
-    print("----------Predict Using Emission for {0}------------".format(l))
-    with open("./{}/dev.in".format(l)) as in_file, open("./{}/dev.p2.out".format(l), 'w+') as out_file:
-        for line in in_file:
-            word = line.strip()
-            if (word == ''):
-                out_file.write("\n")
-            else:
-                out_file.write("{} {}\n".format(
-                    word, model.predict_label_using_emission(word)))
-    print("Emission Finished: {}".format(l))
+        gold = open('{0}/dev.out'.format(l), "r", encoding='UTF-8')
+        prediction = open('{0}/dev.p3.out'.format(l), "r", encoding='UTF-8')
 
-    output = os.popen(
-        "python3 EvalScript/evalResult.py {0}/dev.out {0}/dev.p2.out".format(l)).read()
-    print("Language: {}".format(l))
-    print(output)
+        # column separator
+        separator = ' '
 
-    # print("----------Viterbi for {0}------------".format(l))
-    # with open("./{}/dev.in".format(l)) as in_file, open("./{}/dev.p3.out".format(l), 'w+') as out_file:
-    #     read_data = in_file.read()
-    #     sentences = list(filter(lambda x: len(x) > 0, read_data.split('\n\n')))
-    #     sentences = list(map(lambda x: ' '.join(x.split('\n')), sentences))
-    #     for sentence in sentences:
-    #         sentence_labels, chance = model.viterbi(sentence)
-    #         for idx, word in enumerate(sentence.split()):
-    #             out_file.write("{} {}\n".format(word, sentence_labels[idx]))
-    #         out_file.write('\n')
-    #     out_file.close()
-    #     in_file.close()
+        # the column index for tags
+        outputColumnIndex = 1
+        # Read Gold data
+        observed = get_observed(gold)
 
-    # print("Viterbi Finished: {}".format(l))
+        # Read Predction data
+        predicted = get_predicted(prediction)
 
-    # output = os.popen(
-    #     "python3 EvalScript/evalResult.py {0}/dev.out {0}/dev.p3.out".format(l)).read()
-    # print("Language: {}".format(l))
-    # print(output)
+        # Compare
+        x_array.append(-math.log(i))
+        entity_f, sen_f = compare_observed_to_predicted(observed, predicted)
+        entity_array.append(entity_f)
+        sentiment_array.append(sen_f)
 
-    # print("----------Max Marginal for {0}------------".format(l))
-    # with open("./{}/dev.in".format(l)) as in_file, open("./{}/dev.p4.out".format(l), 'w+') as out_file:
-    #     read_data = in_file.read()
-    #     sentences = list(filter(lambda x: len(x) > 0, read_data.split('\n\n')))
-    #     sentences = list(map(lambda x: ' '.join(x.split('\n')), sentences))
-    #     for sentence in sentences:
-    #         sentence_labels = model.max_marginal(sentence=sentence)
-    #         for idx, word in enumerate(sentence.split()):
-    #             out_file.write("{} {}\n".format(word, sentence_labels[idx]))
-    #         out_file.write('\n')
-    # print("Max Marginal Finished: {}".format(l))
+        i /= 10
 
-    # output = os.popen(
-    #     "python3 EvalScript/evalResult.py {0}/dev.out {0}/dev.p4.out".format(l)).read()
-    # print("Language: {}".format(l))
-    # print(output)
+    print(x_array, entity_array, sentiment_array)
+    fig = plt.figure()
+
+    plt.plot(x_array, entity_array, label='Entity')
+    plt.plot(x_array, sentiment_array, label='Sentiment')
+    plt.ylabel('score')
+    plt.xlabel('negative of log default emission')
+    plt.savefig('{0}/score.png'.format(l))
+
+# output = os.popen(
+#     "python3 EvalScript/evalResult.py {0}/dev.out {0}/dev.p3.out".format(l)).read()
+# print("Language: {}".format(l))
+# print(output)
+
+# print("----------Max Marginal for {0}------------".format(l))
+# with open("./{}/dev.in".format(l)) as in_file, open("./{}/dev.p4.out".format(l), 'w+') as out_file:
+#     read_data = in_file.read()
+#     sentences = list(filter(lambda x: len(x) > 0, read_data.split('\n\n')))
+#     sentences = list(map(lambda x: ' '.join(x.split('\n')), sentences))
+#     for sentence in sentences:
+#         sentence_labels = model.max_marginal(sentence=sentence)
+#         for idx, word in enumerate(sentence.split()):
+#             out_file.write("{} {}\n".format(word, sentence_labels[idx]))
+#         out_file.write('\n')
+# print("Max Marginal Finished: {}".format(l))
+
+# output = os.popen(
+#     "python3 EvalScript/evalResult.py {0}/dev.out {0}/dev.p4.out".format(l)).read()
+# print("Language: {}".format(l))
+# print(output)

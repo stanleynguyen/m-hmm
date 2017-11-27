@@ -151,6 +151,8 @@ def printResult(evalTarget, num_correct, prec, rec):
     print(evalTarget, ' recall: %.4f' % (rec))
     print(evalTarget, ' F: %.4f' % (f))
 
+    return f
+
 # Compare results bewteen gold data and prediction data
 
 
@@ -201,36 +203,38 @@ def compare_observed_to_predicted(observed, predicted):
 
     prec = correct_entity / total_predicted
     rec = correct_entity / total_observed
-    printResult('Entity', correct_entity, prec, rec)
+    entity_f = printResult('Entity', correct_entity, prec, rec)
     print()
 
     prec = correct_sentiment / total_predicted
     rec = correct_sentiment / total_observed
-    printResult('Sentiment', correct_sentiment, prec, rec)
+    sentiment_f = printResult('Sentiment', correct_sentiment, prec, rec)
+
+    return entity_f, sentiment_f
 
 
 ##############Main Function##################
 
 
-if len(sys.argv) < 3:
-    print ('Please make sure you have installed Python 3.4 or above!')
-    print ("Usage on Windows:  python evalResult.py gold predictions")
-    print ("Usage on Linux/Mac:  python3 evalResult.py gold predictions")
-    sys.exit()
+# if len(sys.argv) < 3:
+#     print ('Please make sure you have installed Python 3.4 or above!')
+#     print ("Usage on Windows:  python evalResult.py gold predictions")
+#     print ("Usage on Linux/Mac:  python3 evalResult.py gold predictions")
+#     sys.exit()
 
-gold = open(sys.argv[1], "r", encoding='UTF-8')
-prediction = open(sys.argv[2], "r", encoding='UTF-8')
+# gold = open(sys.argv[1], "r", encoding='UTF-8')
+# prediction = open(sys.argv[2], "r", encoding='UTF-8')
 
-# column separator
+# # column separator
 separator = ' '
 
-# the column index for tags
+# # the column index for tags
 outputColumnIndex = 1
-# Read Gold data
-observed = get_observed(gold)
+# # Read Gold data
+# observed = get_observed(gold)
 
-# Read Predction data
-predicted = get_predicted(prediction)
+# # Read Predction data
+# predicted = get_predicted(prediction)
 
-# Compare
-compare_observed_to_predicted(observed, predicted)
+# # Compare
+# compare_observed_to_predicted(observed, predicted)

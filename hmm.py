@@ -4,7 +4,7 @@ import os
 
 
 class SUTDHMM:
-    def __init__(self, k=1, special_word='#UNK#', dummy_word='#DUM#', pre_prob={}):
+    def __init__(self, k=1, special_word='#UNK#', dummy_word='#DUM#', pre_prob={}, default_emission=0.0):
         # 2 layer dictionary depth-0 key is the label, depth-1 key is the word
         self.emission_params = {}
         self.y_count = {}
@@ -17,6 +17,7 @@ class SUTDHMM:
         self.label_prob = pre_prob
         self.special_word = special_word
         self.dummy_word = dummy_word
+        self.default_emission = default_emission
         if k > 0:
             self.k = k
         else:
@@ -97,8 +98,11 @@ class SUTDHMM:
         self.emission_params = copy.deepcopy(self.x_given_y_count)
         for label in self.emission_params:
             for word in self.emission_params[label]:
-                self.emission_params[label][word] = float(
-                    self.x_given_y_count[label][word]) / self.y_count[label]
+                if self.x_given_y_count[label][word] == 0:
+                    self.emission_params[label][word] = self.default_emission
+                else:
+                    self.emission_params[label][word] = float(
+                        self.x_given_y_count[label][word]) / self.y_count[label]
 
         return self.emission_params
 
@@ -177,7 +181,7 @@ class SUTDHMM:
                     trans_param = self.transition_params[prev_l][l]
 
                     emission_param = self.emission_params[l][observed_words[i]
-                                                             ] if observed_words[i] in self.emission_params[l] else emission_p[l]['#UNK#']
+                                                             ] if observed_words[i] in self.emission_params[l] else self.emission_params[l]['#UNK#']
                     prob = cache[i - 1][prev_l]['chance'] * \
                         trans_param * emission_param
                     if prob > max_prob:

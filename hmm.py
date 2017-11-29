@@ -23,6 +23,7 @@ class SUTDHMM:
         else:
             self.k = 1
         self.tokens_list = []
+        self.perceptron_trained = False
 
     def load_data(self, raw_string=None, data_filename=None):
         tokens_list = []
@@ -286,3 +287,62 @@ class SUTDHMM:
             predictions.append(max(product_p, key=product_p.get))
 
         return predictions
+
+    def update_params(self, sentence: str, new_labels: list, old_labels: list):
+        for i in range(len(old_labels)):
+            self.y_count[old_labels[i]] -= 1
+            self.y_count[new_labels[i]] += 1
+
+        for i in range(1, len(old_labels)):
+            self.y_given_prev_y_count[old_labels[i - 1]][old_labels[i]] -= 1
+            self.y_given_prev_y_count[new_labels[i - 1]][new_labels[i]] += 1
+            self.transition_params[old_labels[i - 1]][old_labels[i]] = float(
+                self.y_given_prev_y_count[old_labels[i - 1]][old_labels[i]]) / self.y_count[old_labels[i - 1]]
+            self.transition_params[new_labels[i - 1]][new_labels[i]] = float(
+                self.y_given_prev_y_count[new_labels[i - 1]][new_labels[i]]) / self.y_count[new_labels[i - 1]]
+
+        observed_words = sentence.split()
+        for i, word in enumerate(observed_words):
+            self.x_given_y_count[old_labels[i]][word] -= 1
+            self.x_given_y_count[new_labels[i]][word] += 1
+            self.emission_params[old_labels[i]][word] = float(
+                self.x_given_y_count[old_labels[i]][word]) / self.y_count[old_labels[i]]
+            self.emission_params[new_labels[i]][word] = float(
+                self.x_given_y_count[new_labels[i]][word]) / self.y_count[new_labels[i]]
+
+    def train_perceptron(self, raw_string=None, input_filename=None, num_iteration=20):
+        self.train(raw_string=raw_string, input_filename=input_filename)
+
+        sentence_list = []
+        old_labels_for_sentences = []
+        tmp_sentence = ''
+        tmp_labels = []
+        for token in self.tokens_list:
+            if token[1] != 'START' and token[1] != 'STOP':
+                tmp_sentence += token[0] + ' '
+                tmp_labels.append(token[1])
+            elif token[1] == 'START':
+                tmp_sentence = ''
+                tmp_labels = []
+            elif token[1] == 'STOP':
+                tmp_sentence = tmp_sentence[:-1]
+                sentence_list.append(tmp_sentence)
+                old_labels_for_sentences.append(tmp_labels)
+
+        for j in range(num_iteration):
+            for i, sentence in enumerate(sentence_list):
+                old_labels = old_labels_for_sentences[i]
+                new_labels, chance = self.viterbi(sentence)
+                self.update_params(
+                    sentence=sentence, old_labels=old_labels, new_labels=new_labels)
+                old_labels_for_sentences[i] = new_labels
+
+            print('finished iteration {}'.format(j))
+
+        self.perceptron_trained = True
+
+    def predict_perceptron(self, sentence: str):
+        if not self.perceptron_trained:
+            raise Exception('Perceptron Not Trained Yet')
+        else:
+            return self.viterbi(sentence)

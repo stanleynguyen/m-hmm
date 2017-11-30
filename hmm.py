@@ -337,8 +337,6 @@ class SUTDHMM:
                     sentence=sentence, old_labels=old_labels, new_labels=new_labels)
                 old_labels_for_sentences[i] = new_labels
 
-            print('finished iteration {}'.format(j))
-
         self.perceptron_trained = True
 
     def predict_perceptron(self, sentence: str):

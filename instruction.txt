@@ -1,0 +1,11 @@
+This is the instruction to running the generate_output.py script
+
+The usage of the script is as follow:
+    python3 generate_output.py -t <trainfile> -i <inputfile> -o <outputfile>
+or if you have python3 as the default python:
+    python generate_output.py -t <trainfile> -i <inputfile> -o <outputfile>
+or if you have python3 as a command inside /user/bin:
+    generate_output.py -t <trainfile> -i <inputfile> -o <outputfile>
+
+Example:
+    python3 generate_output.py -t ./EN/train -i ./test/EN/test.in -o ./test/EN/test.out
